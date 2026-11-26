@@ -82,8 +82,13 @@ function Index() {
   const borrar = async (s: Serie) => {
     if (!window.confirm(`¿Seguro que quieres borrar "${s.titulo}"? Esta acción no se puede deshacer.`)) return;
     setError(null);
-    const res = await ejecutar(() => borrarSerie(s.id));
-    if (res) { setAviso(`"${res.titulo}" borrada.`); await cargar(); }
+    // DELETE responde 204 sin cuerpo: solo importa si la petición terminó sin error.
+    const ok = await ejecutar(async () => { await borrarSerie(s.id); return true as const; });
+    if (ok) {
+      setSeries((prev) => prev.filter((x) => x.id !== s.id));
+      setAviso(`"${s.titulo}" borrada.`);
+      await cargar();
+    }
   };
 
   const cargando = pendientes > 0;

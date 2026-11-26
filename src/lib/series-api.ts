@@ -43,6 +43,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     if (res.status === 404) throw new Error(`Serie no encontrada (404). ${detail}`.trim());
     throw new Error(`Error ${res.status} de la API. ${detail}`.trim());
   }
+  // 204 No Content: la respuesta no tiene cuerpo, así que no se intenta parsear JSON.
+  if (res.status === 204) return undefined as unknown as T;
   return (await res.json()) as T;
 }
 
@@ -52,7 +54,8 @@ export const crearSerie = (s: SerieNueva) =>
   request<Serie>("/series", { method: "POST", body: JSON.stringify(s) });
 export const editarSerie = (id: number, s: SerieEdicion) =>
   request<Serie>(`/series/${id}`, { method: "PUT", body: JSON.stringify(s) });
-export const borrarSerie = (id: number) => request<Serie>(`/series/${id}`, { method: "DELETE" });
+export const borrarSerie = (id: number): Promise<void> =>
+  request<void>(`/series/${id}`, { method: "DELETE" });
 
 export interface FormValues {
   titulo: string;
