@@ -32,20 +32,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new Error("No se pudo conectar con la API. Puede que el servidor esté despertando, que no haya conexión o que la API no permita peticiones desde esta web (CORS). Inténtalo de nuevo.");
   }
+  const texto = await res.text().catch(() => "");
+  let cuerpo: unknown = undefined;
+  let jsonValido = true;
+  if (texto.trim()) {
+    try { cuerpo = JSON.parse(texto); } catch { jsonValido = false; }
+  }
   if (!res.ok) {
-    let detail = "";
-    try {
-      const body = await res.json();
-      detail = typeof body?.detail === "string" ? body.detail : JSON.stringify(body?.detail ?? body);
-    } catch {
-      /* sin cuerpo */
-    }
+    const d = (cuerpo as { detail?: unknown } | undefined)?.detail ?? cuerpo;
+    const detail = d === undefined ? "" : typeof d === "string" ? d : JSON.stringify(d);
     if (res.status === 404) throw new Error(`Serie no encontrada (404). ${detail}`.trim());
     throw new Error(`Error ${res.status} de la API. ${detail}`.trim());
   }
-  // 204 No Content: la respuesta no tiene cuerpo, así que no se intenta parsear JSON.
-  if (res.status === 204) return undefined as unknown as T;
-  return (await res.json()) as T;
+  // 204 o cuerpo vacío (p. ej. DELETE): no hay nada que parsear.
+  if (res.status === 204 || !texto.trim()) return undefined as unknown as T;
+  if (!jsonValido) throw new Error("La API devolvió una respuesta no válida.");
+  return cuerpo as T;
 }
 
 export const listarSeries = () => request<Serie[]>("/series");

@@ -20,3 +20,11 @@ describe("borrarSerie", () => {
     expect(fetchMock).toHaveBeenCalledWith(`${API_BASE}/series/3`, expect.objectContaining({ method: "DELETE" }));
   });
 });
+
+import { borrarSerie as borrar2 } from "./series-api";
+import { it as it2, expect as expect2, vi as vi2 } from "vitest";
+it2("DELETE con 200 y cuerpo vacío se resuelve sin error", async () => {
+  vi2.stubGlobal("fetch", vi2.fn(async () => new Response("", { status: 200 })));
+  await expect2(borrar2(1)).resolves.toBeUndefined();
+  vi2.unstubAllGlobals();
+});
